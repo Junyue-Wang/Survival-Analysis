@@ -1,0 +1,353 @@
+---
+title: "175 final project"
+author: "Junyue Wang"
+output: html_document
+---
+```{r}
+Sys.setlocale('LC_ALL','C')
+library(survival)
+rossi <- read.table(url("http://socserv.mcmaster.ca/jfox/Books/Companion/data/Rossi.txt"),header=TRUE,stringsAsFactors = FALSE)
+rossi <- rossi[c(1:10)]
+
+rossi$fin[rossi$fin == "no"]<- 0
+rossi$fin[rossi$fin == "yes"]<- 1
+rossi$race[rossi$race == "other"] <- 0
+rossi$race[rossi$race == "black"] <- 1
+
+rossi$wexp[rossi$wexp == "no"] <- 0
+rossi$wexp[rossi$wexp == "yes"] <- 1
+rossi$wexp <- as.numeric(rossi$wexp)
+
+rossi$mar[rossi$mar == "not married"] <- 0
+rossi$mar[rossi$mar == "married"] <- 1
+rossi$mar <- as.numeric(rossi$mar)
+
+rossi$paro[rossi$paro == "yes"] <- 1
+rossi$paro[rossi$paro == "no"] <- 0
+rossi$paro <- as.numeric(rossi$paro)
+rossi$educ <- as.factor(rossi$educ)
+rossi$age[rossi$age <=20 ]<-0
+rossi$age[20<rossi$age & rossi$age<= 27]<-1
+rossi$age[rossi$age>27]<-2
+rossi$prio[rossi$prio < 3]<-0
+rossi$prio[rossi$prio >=3 ] <-1
+rossi
+
+rossi$prio<-as.factor(rossi$prio)
+rossi$age <- as.factor(rossi$age)
+rossi$race <- as.factor(rossi$race)
+rossi$wexp <- as.factor(rossi$wexp)
+rossi$mar <- as.factor(rossi$mar)
+```
+
+
+Document introduction :
+
+A data frame with 432 observations on the following 62 variables. 
+
+week
+week of first arrest after release or censoring; all censored observations are censored at 52 weeks.
+
+arrest
+1 if arrested, 0 if not arrested.
+
+fin
+financial aid: no - 0  yes - 1.
+
+age
+in years at time of release.
+
+race
+black - 1  other - 0.
+
+wexp
+full-time work experience before incarceration: no - 0 or yes - 1.
+
+mar
+marital status at time of release: married - 1  not married - 0 .
+
+paro
+released on parole? no - 0 or yes - 1.
+
+prio
+number of convictions prior to current incarceration.
+
+educ
+level of education: 2 = 6th grade or less; 3 = 7th to 9th grade; 4 = 10th to 11th grade; 5 = 12th grade; 6 = some college.
+
+```{r}
+```
+
+
+```{r}
+summary(rossi$prio)
+```
+
+
+First we calculate the KM estimate of the survival function.
+
+```{r}
+rossi.surv <- Surv(rossi$week,rossi$arrest)
+rossi.fit <- survfit(rossi.surv~1)
+
+plot(rossi.fit,mark=19,lwd=2, 
+     col=c("steelblue","pink"),
+     ylab="Survival Probability", 
+     xlab="Days until re-arrested", 
+     main="Kaplan-Meier Estimate for rossi data")
+
+```
+
+Compare the Kaplan-Meier estimates of the survivor functions for each covariate individually.
+
+```{r}
+
+kmfin <- survfit(rossi.surv~rossi$fin)
+plot(kmfin,mark=19,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for receiving financial aid",col = c(3,6))
+
+legend(0,0.18,c("None","Prsence"),fill=c(3,6))
+```
+
+
+```{r}
+kmage <- survfit(rossi.surv~rossi$age)
+plot(kmage,mark=19,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for release age",col = c(3,4,5))
+legend(0,0.4,c("age <= 20","age between 20 and 27","age>27"),fill=c(3,4,5))
+
+```
+
+```{r}
+kmrace <- survfit(rossi.surv~rossi$race)
+plot(kmrace,mark=19,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for race",col = c(3,6))
+legend(0,0.18,c("other","black"),fill=c(3,6))
+```
+
+```{r}
+kmwexp <- survfit(rossi.surv~rossi$wexp)
+plot(kmwexp,mark=19,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for full time working experience",col = c(3,6))
+legend(0,0.2,c("no full time work experience","full time work experience"),fill=c(3,6))
+```
+
+```{r}
+kmar <- survfit(rossi.surv~rossi$mar)
+plot(kmar,mark=19,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for marriage",col = c(3,6))
+legend(0,0.2,c("not married","married"),fill=c(3,6))
+```
+
+```{r}
+kmparo <- survfit(rossi.surv~rossi$paro)
+plot(kmparo,mark=19,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for released on paro",col = c(3,6))
+legend(0,0.2,c("not released on parole","released on parole"),fill=c(3,6))
+```
+
+```{r}
+kmprio <- survfit(rossi.surv~rossi$prio)
+plot(kmprio,mark=19,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for prior to current incarceration",col = c(3,6))
+legend(0,0.2,c("less than 3 conviction","greater or equal to 3 convictions"),fill=c(3,6))
+```
+
+
+
+```{r}
+kmedu <- survfit(rossi.surv~rossi$educ)
+plot(kmedu,mark=19,lwd=3,
+     ylab = "Survival Probability",xlab = "survival Time in weeks",
+     main = "KM curves for education leves",col = c(1,2,3,4,5))
+legend(0,0.4,c("6th grade or less","7th to 9th grade","10th to 11th grade","12th grade","some college"),fill = c(1,2,3,4,5))
+```
+
+
+Log-rank test for each covariate and interpretation.
+
+```{r}
+fin.diff <- survdiff(rossi.surv~rossi$fin)
+fin.diff
+```
+
+
+```{r}
+age.diff <- survdiff(rossi.surv~rossi$age)
+age.diff
+```
+
+
+```{r}
+race.diff <- survdiff(rossi.surv~rossi$race)
+race.diff
+```
+
+
+```{r}
+wexp.diff <- survdiff(rossi.surv~rossi$wexp)
+wexp.diff
+
+```
+
+
+```{r}
+mar.diff <- survdiff(rossi.surv~rossi$mar)
+mar.diff
+
+```
+```{r}
+prio.diff <- survdiff(rossi.surv~rossi$prio)
+prio.diff
+
+
+```
+
+
+
+```{r}
+paro.diff <- survdiff(rossi.surv~rossi$paro)
+paro.diff
+
+```
+
+```{r}
+educ.diff <- survdiff(rossi.surv~rossi$educ)
+educ.diff
+```
+
+Model selection
+
+
+
+```{r}
+model1 <- coxph(Surv(week,arrest)~fin+age+prio,data=rossi)
+cox.zph(model1)
+```
+
+From the coxzph test, we want to stratify age variable.
+
+C-log-log plot
+
+```{r}
+# financial aid
+plot(survfit(Surv(week,arrest)~fin,data=rossi),lwd=2,col=c(2,4),fun="cloglog")
+legend(10,1,c("no","yes"),fill=c(2,4))
+```
+
+```{r}
+plot(survfit(Surv(week,arrest)~age,data=rossi),lwd=2,col=c(2,3,4,5),fun="cloglog")
+legend(1,-1,c("less than 20","between 20 and 24","between 24 and 27","greater than 27"),fill=c(2,3,4,5))
+```
+
+
+
+```{r}
+plot(survfit(Surv(week,arrest)~prio,data=rossi),lwd=2,col=c(2,4),fun="cloglog")
+
+```
+
+
+```{r}
+finalmodel <- coxph(Surv(week,arrest)~fin+prio+strata(age),data=rossi)
+summary(finalmodel)
+```
+
+Interaction term
+
+```{r}
+interaction1 <- coxph(Surv(week,arrest)~fin*prio,data=rossi)
+anova(interaction1)
+
+```
+
+```{r}
+interaction2 <- coxph(Surv(week,arrest)~fin*strata(age),data=rossi)
+anova(interaction2)
+```
+
+```{r}
+interaction3 <- coxph(Surv(week,arrest)~prio*strata(age),data=rossi)
+anova(interaction3)
+```
+
+
+```{r}
+library(survminer)
+library(dplyr)
+require("survival")
+fit3 <- coxph(Surv(week,arrest)~fin+prio,data=rossi)
+ci <- ggforest(fit3,data=rossi)
+ci
+```
+```{r}
+finalmodel2 <- coxph(Surv(week,arrest)~fin+prio+strata(age)+strata(age)*prio,data=rossi)
+summary(finalmodel2)
+```
+
+
+```{r}
+plot(survfit(finalmodel),fun="cumhaz",lwd=5,mark=5,col=c(3,4,5))
+legend(0,0.3,c("age less than 20","age between 20 and 27","age greater than 27"),fill = c(3,4,5))
+```
+
+
+AFT model
+
+```{r}
+fit_aft <- survreg(Surv(week,arrest)~fin+prio+age,data=rossi)
+fitted_values <- fit_aft$linear.predictors
+resids <- (log(fit_aft$y[,1]-fitted_values)/fit_Aft$scale)
+xx<-seq(min(resids),max(resids),length.out=100)
+yy<-plogis(xx, lower.tail = FALSE)
+
+           
+```
+
+
+```{r}
+surv.fit=survfit(rossi.surv~fin,data=rossi)
+plot(log(surv.fit$time),log(surv.fit$surv/(1-surv.fit$surv)),  type="p", xlab="Log Time", ylab="Log Odds of Survival",col=4,main="Survival odds plot",pch=19,ylim=c(0,15)) 
+```
+
+
+```{r}
+surv.fit=survfit(rossi.surv~age,data=rossi)
+plot(log(surv.fit$time),log(surv.fit$surv/(1-surv.fit$surv)),  type="p", xlab="Log Time", ylab="Log Odds of Survival",col=3,main="Survival odds plot",pch=19,ylim=c(0,15)) 
+
+```
+
+
+
+```{r}
+surv.fit=survfit(rossi.surv~prio,data=rossi)
+plot(log(surv.fit$time),log(surv.fit$surv/(1-surv.fit$surv)),  type="p", xlab="Log Time", ylab="Log Odds of Survival",col=2,main="Survival odds plot",pch=19,ylim=c(0,15)) 
+
+```
+
+```{r}
+
+
+```
+
+
+
+```{r}
+logfinalmodel <- survreg(coxph(Surv(week,arrest)~fin+prio+age,data=rossi),data=rossi,dist = "loglogistic")
+summary(logfinalmodel)
+
+```
+
+
+
+```{r}
+
+```
+
